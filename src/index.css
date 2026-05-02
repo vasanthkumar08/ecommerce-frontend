@@ -12,6 +12,9 @@
   --space-12: 48px;
   --radius-control: 8px;
   --radius-card: 14px;
+  --control-height: 44px;
+  --control-padding-x: 14px;
+  --control-font-size: 14px;
   --shadow-card: 0 4px 12px rgba(15, 23, 42, 0.08);
   --shadow-card-hover: 0 8px 24px rgba(15, 23, 42, 0.12);
   --shadow-button: 0 2px 8px rgba(37, 99, 235, 0.18);
@@ -122,6 +125,14 @@ button {
   line-height: 1.5;
 }
 
+label,
+input,
+select,
+textarea,
+button {
+  font-size: var(--control-font-size);
+}
+
 small {
   font-size: 12px;
   line-height: 1.45;
@@ -184,6 +195,15 @@ textarea {
   border-radius: var(--radius-control);
 }
 
+input,
+select {
+  min-height: var(--control-height);
+}
+
+textarea {
+  min-height: calc(var(--control-height) * 2);
+}
+
 button,
 a {
   touch-action: manipulation;
@@ -235,5 +255,16 @@ a {
 @keyframes skeleton-shimmer {
   100% {
     transform: translateX(100%);
+  }
+}
+
+@keyframes quantity-pop {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 }

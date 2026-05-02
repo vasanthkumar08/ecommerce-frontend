@@ -33,7 +33,7 @@ export default function OrderManager() {
 
   const fetchOrders = async () => {
     try {
-      setLoading(true);
+      if (!orders.length) setLoading(true);
       const res = await requestWithFallback("get", orderEndpoints);
       setActiveOrdersEndpoint(res.config.url);
       setOrders(Array.isArray(getOrdersArray(res.data)) ? getOrdersArray(res.data) : []);
@@ -51,15 +51,25 @@ export default function OrderManager() {
 
   const updateStatus = async (id, status) => {
     const normalizedStatus = normalizeStatus(status);
+    const previousOrders = orders;
+    const isCancelled = normalizedStatus === "Cancelled";
+
+    setOrders((current) =>
+      isCancelled
+        ? current.filter((order) => order._id !== id)
+        : current.map((order) =>
+            order._id === id ? { ...order, status: normalizedStatus } : order
+          )
+    );
 
     try {
       await requestWithFallback("put", [
         `/orders/${id}`,
         `${activeOrdersEndpoint}/${id}`,
       ], { status: normalizedStatus });
-      toast.success("Status updated");
-      fetchOrders();
+      toast.success(isCancelled ? "Order cancelled" : "Status updated");
     } catch (err) {
+      setOrders(previousOrders);
       toast.error(err.response?.data?.message || "Update failed");
     }
   };

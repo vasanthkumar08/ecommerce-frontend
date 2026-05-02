@@ -12,7 +12,7 @@ import { getJson, setJson } from "../utils/storage";
 const itemKey = (item) => item.product?._id || item._id || item.id || item.name;
 const CART_CACHE_KEY = "cart:cache";
 const CART_PENDING_KEY = "cart:pending";
-const SYNC_DELAY = 500;
+const SYNC_DELAY = 150;
 
 const isBrowserOnline = () => typeof navigator === "undefined" ? true : navigator.onLine;
 const normalizeCachedItems = (items) => normalizeCart({ items: Array.isArray(items) ? items : [] });
@@ -41,49 +41,60 @@ const savePendingOps = (ops) => setJson(CART_PENDING_KEY, {
   removals: Array.from(new Set(ops.removals || [])),
 });
 
-const CartItem = memo(function CartItem({ item, busyAction, onIncrease, onDecrease, onRemove }) {
+const CartItem = memo(function CartItem({ item, busyAction, isSyncing, onIncrease, onDecrease, onRemove }) {
   const key = itemKey(item);
-  const isIncreasing = busyAction === `${key}:increase`;
-  const isDecreasing = busyAction === `${key}:decrease`;
   const isRemoving = busyAction === `${key}:remove`;
-  const isBusy = Boolean(busyAction?.startsWith(`${key}:`));
+  const price = Number(item.product?.price || item.price || 0);
+  const quantity = Number(item.quantity || 1);
+  const itemSubtotal = price * quantity;
 
   return (
-    <article className="grid min-w-0 gap-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-[var(--shadow-card)] dark:border-slate-700 dark:bg-slate-800 sm:p-4 md:grid-cols-[112px_minmax(0,1fr)_auto]">
+    <article className="grid min-w-0 gap-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-[var(--shadow-card)] transition duration-200 hover:border-blue-100 hover:shadow-[var(--shadow-card-hover)] dark:border-slate-700 dark:bg-slate-800 dark:hover:border-sky-900 sm:p-4 md:grid-cols-[112px_minmax(0,1fr)_auto]">
       <img src={item.product?.image || item.image} alt={item.product?.name || item.name} className="aspect-[4/3] w-full rounded-xl bg-slate-50 object-cover dark:bg-slate-900 md:h-28 md:w-28" />
       <div className="min-w-0">
         <h2 className="break-words font-semibold text-slate-950 dark:text-slate-50">{item.product?.name || item.name}</h2>
-        <p className="mt-2 text-lg font-semibold text-blue-600 dark:text-sky-400">₹{item.product?.price}</p>
+        <p className="mt-2 text-lg font-semibold text-blue-600 dark:text-sky-400">₹{price}</p>
+        <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-300">
+          Item subtotal: <span className="text-slate-800 dark:text-slate-100">₹{itemSubtotal}</span>
+        </p>
         <button
           type="button"
           onClick={(event) => onRemove(event, item)}
-          disabled={isBusy}
+          disabled={isRemoving}
           className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-60 dark:text-slate-300"
         >
           {isRemoving && <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />}
           Remove
         </button>
       </div>
-      <div className="flex h-max w-full max-w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900 sm:w-max sm:justify-start">
-        <button
-          type="button"
-          onClick={(event) => onDecrease(event, item)}
-          disabled={isBusy}
-          className="grid h-11 w-11 place-items-center disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label="Decrease quantity"
-        >
-          {isDecreasing ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" /> : <Icon name="minus" className="h-4 w-4" />}
-        </button>
-        <span className="min-w-10 text-center text-sm font-semibold">{item.quantity}</span>
-        <button
-          type="button"
-          onClick={(event) => onIncrease(event, item)}
-          disabled={isBusy}
-          className="grid h-11 w-11 place-items-center disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label="Increase quantity"
-        >
-          {isIncreasing ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" /> : <Icon name="plus" className="h-4 w-4" />}
-        </button>
+      <div className="flex h-max w-full max-w-full flex-col gap-2 sm:w-max">
+        <div className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900 sm:w-max sm:justify-start">
+          <button
+            type="button"
+            onClick={(event) => onDecrease(event, item)}
+            disabled={isSyncing}
+            className="grid h-11 w-11 place-items-center rounded-l-xl hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800"
+            aria-label="Decrease quantity"
+          >
+            <Icon name="minus" className="h-4 w-4" />
+          </button>
+          <span key={quantity} className="min-w-10 animate-[quantity-pop_180ms_ease-out] text-center text-sm font-semibold">{quantity}</span>
+          <button
+            type="button"
+            onClick={(event) => onIncrease(event, item)}
+            disabled={isSyncing}
+            className="grid h-11 w-11 place-items-center rounded-r-xl hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-slate-800"
+            aria-label="Increase quantity"
+          >
+            <Icon name="plus" className="h-4 w-4" />
+          </button>
+        </div>
+        {isSyncing && (
+          <span className="inline-flex items-center justify-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-300">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+            Syncing
+          </span>
+        )}
       </div>
     </article>
   );
@@ -94,6 +105,7 @@ export default function Cart() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState("");
+  const [syncingProductIds, setSyncingProductIds] = useState(() => new Set());
   const [isOnline, setIsOnline] = useState(isBrowserOnline);
   const debounceTimers = useRef({});
   const latestItemsRef = useRef([]);
@@ -115,7 +127,9 @@ export default function Cart() {
 
   const loadCart = useCallback(async () => {
     const cachedItems = normalizeCachedItems(getJson(CART_CACHE_KEY, []));
-    if (cachedItems.length) {
+    const hasCachedItems = cachedItems.length > 0;
+
+    if (hasCachedItems) {
       syncItems(cachedItems);
       setLoading(false);
     }
@@ -126,7 +140,7 @@ export default function Cart() {
     }
 
     try {
-      setLoading(true);
+      if (!hasCachedItems) setLoading(true);
       const res = await api.get("/cart");
       const serverItems = normalizeCart(res.data);
       const pending = getPendingOps();
@@ -200,7 +214,7 @@ export default function Cart() {
     debounceTimers.current[productId] = setTimeout(async () => {
       if (!isBrowserOnline()) return;
 
-      setBusyAction(`${productId}:sync`);
+      setSyncingProductIds((current) => new Set(current).add(productId));
       try {
         await api.put("/cart/update", { product: productId, quantity });
         const currentPending = getPendingOps();
@@ -211,7 +225,12 @@ export default function Cart() {
         window.dispatchEvent(new CustomEvent("cart:quantity-changed", { detail: { productId, quantity: itemQuantity } }));
         toast.error(err.message || "Unable to update cart");
       } finally {
-        setBusyAction("");
+        setSyncingProductIds((current) => {
+          const next = new Set(current);
+          next.delete(productId);
+          return next;
+        });
+        delete debounceTimers.current[productId];
       }
     }, SYNC_DELAY);
   }, [syncItems]);
@@ -225,15 +244,15 @@ export default function Cart() {
       return;
     }
 
-    const previousItems = items;
-    const nextItems = items.map((cartItem) =>
+    const previousItems = latestItemsRef.current;
+    const nextItems = previousItems.map((cartItem) =>
       cartItem.product?._id === productId ? { ...cartItem, quantity: nextQuantity } : cartItem
     );
 
     syncItems(nextItems);
     window.dispatchEvent(new CustomEvent("cart:quantity-changed", { detail: { productId, quantity: nextQuantity } }));
     queueQuantitySync(productId, nextQuantity, previousItems, item.quantity);
-  }, [items, queueQuantitySync, syncItems]);
+  }, [queueQuantitySync, syncItems]);
 
   const handleIncrease = useCallback((event, item) => {
     updateQuantity(event, item, Number(item.quantity || 1) + 1);
@@ -244,8 +263,8 @@ export default function Cart() {
     const productId = item.product?._id;
     if (!productId) return;
 
-    const previousItems = items;
-    const nextItems = items.filter((cartItem) => cartItem.product?._id !== productId);
+    const previousItems = latestItemsRef.current;
+    const nextItems = previousItems.filter((cartItem) => cartItem.product?._id !== productId);
 
     syncItems(nextItems);
     window.dispatchEvent(new CustomEvent("cart:item-removed", { detail: { productId } }));
@@ -289,7 +308,7 @@ export default function Cart() {
     } finally {
       setBusyAction("");
     }
-  }, [items, syncItems]);
+  }, [syncItems]);
 
   const handleDecrease = useCallback((event, item) => {
     const nextQuantity = Number(item.quantity || 1) - 1;
@@ -318,9 +337,13 @@ export default function Cart() {
             {Array.from({ length: 3 }).map((_, index) => <CartSkeleton key={index} />)}
           </div>
         ) : items.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[var(--shadow-card)] dark:border-slate-700 dark:bg-slate-800">
-            <p className="mb-4 text-slate-600 dark:text-slate-300">Your cart is empty.</p>
-            <Link to="/" className="inline-flex w-full justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 sm:w-auto">
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-[var(--shadow-card)] dark:border-slate-700 dark:bg-slate-800 sm:p-10">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-sky-500/10 dark:text-sky-300">
+              <Icon name="cart" className="h-7 w-7" />
+            </div>
+            <h2 className="mt-5 text-xl font-bold text-slate-950 dark:text-slate-50">Your cart is empty</h2>
+            <p className="mx-auto mb-5 mt-2 max-w-sm text-sm text-slate-600 dark:text-slate-300">Add a few products and your order summary will update here instantly.</p>
+            <Link to="/" className="inline-flex w-full justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-blue-700 sm:w-auto">
               Continue shopping
             </Link>
           </div>
@@ -331,6 +354,7 @@ export default function Cart() {
                 key={itemKey(item)}
                 item={item}
                 busyAction={busyAction}
+                isSyncing={syncingProductIds.has(item.product?._id)}
                 onIncrease={handleIncrease}
                 onDecrease={handleDecrease}
                 onRemove={handleRemove}

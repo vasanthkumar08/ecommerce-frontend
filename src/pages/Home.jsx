@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -42,19 +42,23 @@ export default function Home() {
 
   const { data, loading, error } = useQuery(GET_PRODUCTS);
 
-  const rawProducts = getProductList(data);
-  const products = rawProducts.filter((product) => {
+  const rawProducts = useMemo(() => getProductList(data), [data]);
+  const products = useMemo(() => {
     const activeCategory = normalizeCategory(selectedCategory);
-    const categoryTokens = getCategoryTokens(product);
-    const matchesSearch = search
-      ? product.name?.toLowerCase().includes(search.toLowerCase())
-      : true;
-    const matchesCategory = activeCategory
-      ? categoryTokens.includes(activeCategory)
-      : true;
+    const normalizedSearch = search.toLowerCase();
 
-    return matchesSearch && matchesCategory;
-  });
+    return rawProducts.filter((product) => {
+      const categoryTokens = getCategoryTokens(product);
+      const matchesSearch = normalizedSearch
+        ? product.name?.toLowerCase().includes(normalizedSearch)
+        : true;
+      const matchesCategory = activeCategory
+        ? categoryTokens.includes(activeCategory)
+        : true;
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [rawProducts, search, selectedCategory]);
   const isLoading = loading;
   const productError = error?.message;
   const wishlistIds = useMemo(
@@ -66,7 +70,7 @@ export default function Home() {
     document.title = "ShopEase | Modern E-commerce";
   }, []);
 
-  const loadWishlist = async () => {
+  const loadWishlist = useCallback(async () => {
     if (!getAuthToken()) return;
 
     try {
@@ -75,13 +79,13 @@ export default function Home() {
     } catch {
       setWishlistProducts([]);
     }
-  };
+  }, []);
 
   useEffect(() => {
     Promise.resolve().then(loadWishlist);
-  }, []);
+  }, [loadWishlist]);
 
-  const handleAdd = async (product) => {
+  const handleAdd = useCallback(async (product) => {
     try {
       window.dispatchEvent(new CustomEvent("cart:optimistic-add", { detail: { product } }));
       await api.post("/cart/add", { product: product._id, quantity: 1 });
@@ -91,9 +95,9 @@ export default function Home() {
       window.dispatchEvent(new Event("cart:updated"));
       toast.error(err.message || "Login required to add to cart");
     }
-  };
+  }, []);
 
-  const handleWishlist = async (product) => {
+  const handleWishlist = useCallback(async (product) => {
     try {
       if (wishlistIds.has(product._id)) {
         await api.delete(`/wishlist/remove/${product._id}`);
@@ -106,10 +110,10 @@ export default function Home() {
     } catch (err) {
       toast.error(err.message || "Login required for wishlist");
     }
-  };
+  }, [loadWishlist, wishlistIds]);
 
-  const trending = products.slice(0, 8);
-  const newArrivals = products.slice(4, 12);
+  const trending = useMemo(() => products.slice(0, 8), [products]);
+  const newArrivals = useMemo(() => products.slice(4, 12), [products]);
 
   return (
     <div className="max-w-full space-y-8 md:space-y-10">
@@ -165,21 +169,23 @@ export default function Home() {
         </div>
       </section>
 
-      {newArrivals.length > 0 && (
+      {(isLoading || newArrivals.length > 0) && (
         <section className="space-y-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-blue-600 dark:text-sky-400">New Arrivals</p>
             <h2 className="mt-2 text-2xl font-bold text-slate-950 dark:text-slate-50">Fresh products</h2>
           </div>
           <div className="scrollbar-hide flex max-w-full gap-4 overflow-x-auto scroll-smooth whitespace-nowrap pb-3">
-            {newArrivals.map((product) => (
-              <div key={product._id} className="w-[min(16rem,78vw)] shrink-0 whitespace-normal">
-                <ProductCard
-                  product={product}
-                  onAdd={handleAdd}
-                  onToggleWishlist={handleWishlist}
-                  wished={wishlistIds.has(product._id)}
-                />
+            {(isLoading ? Array.from({ length: 5 }) : newArrivals).map((product, index) => (
+              <div key={product?._id || index} className="w-[min(16rem,78vw)] shrink-0 whitespace-normal">
+                {isLoading ? <ProductSkeleton /> : (
+                  <ProductCard
+                    product={product}
+                    onAdd={handleAdd}
+                    onToggleWishlist={handleWishlist}
+                    wished={wishlistIds.has(product._id)}
+                  />
+                )}
               </div>
             ))}
           </div>

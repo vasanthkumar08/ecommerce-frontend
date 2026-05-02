@@ -5,7 +5,7 @@ import { registerUser } from "../features/auth/authApi";
 import { useState } from "react";
 import Icon from "../components/Icon";
 
-const inputClass = "focus-blue h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-4 text-base text-slate-900 shadow-sm placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:text-sm";
+const inputClass = "focus-blue min-h-[var(--control-height)] w-full min-w-0 rounded-[var(--radius-control)] border border-slate-200 bg-white px-[var(--control-padding-x)] py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -30,10 +30,10 @@ export default function Register() {
   return (
     <div className="w-full max-w-full min-w-0 bg-slate-50 dark:bg-slate-950">
       <div className="container flex min-h-screen items-center justify-center py-6 sm:py-8">
-      <div className="w-[95%] min-w-0 max-w-[520px] overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-[var(--shadow-card)] dark:border-slate-700 dark:bg-slate-900">
-        <div className="mb-6 min-w-0 text-center">
-          <Link to="/" className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-blue-600 text-xl font-bold text-white">S</Link>
-          <h1 className="break-words text-2xl font-bold text-slate-950 dark:text-slate-50">Create account</h1>
+      <div className="w-full min-w-0 max-w-[400px] overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-[var(--shadow-card)] dark:border-slate-700 dark:bg-slate-900 sm:p-6">
+        <div className="mb-5 min-w-0 text-center">
+          <Link to="/" className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-blue-600 text-lg font-bold text-white">S</Link>
+          <h1 className="break-words text-xl font-bold text-slate-950 dark:text-slate-50 sm:text-2xl">Create account</h1>
           <p className="mt-2 break-words text-sm text-slate-500 dark:text-slate-300">Start shopping with a clean, secure account.</p>
         </div>
 
@@ -56,7 +56,7 @@ export default function Register() {
             {errors.password && <p className="mt-1 break-words text-sm font-medium text-rose-600 dark:text-rose-300">{errors.password.message}</p>}
           </div>
 
-          <button type="submit" disabled={isSubmitting} className="flex h-12 w-full min-w-0 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">
+          <button type="submit" disabled={isSubmitting} className="flex min-h-[var(--control-height)] w-full min-w-0 items-center justify-center rounded-[var(--radius-control)] bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">
             {isSubmitting ? "Creating..." : "Register"}
           </button>
         </form>
