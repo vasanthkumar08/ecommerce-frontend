@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@apollo/client/react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import ProductCard from "../components/ProductCard";
 import { ProductSkeleton } from "../components/Skeleton";
 import api from "../services/api";
 import { getAuthToken } from "../utils/storage";
+import { requireAuthForAction } from "../utils/authRedirect";
 import { HERO_IMAGE_URL } from "../config/env";
 import { getProductList, normalizeWishlist } from "../utils/normalize";
 import {
@@ -35,6 +36,7 @@ const getCategoryTokens = (product) => {
 };
 
 export default function Home() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const search = searchParams.get("q") || "";
   const selectedCategory = searchParams.get("category") || "";
@@ -86,6 +88,13 @@ export default function Home() {
   }, [loadWishlist]);
 
   const handleAdd = useCallback(async (product) => {
+    if (!requireAuthForAction({
+      navigate,
+      toast,
+      message: "Please login to add items to cart",
+      pendingAction: { type: "add-to-cart", productId: product._id },
+    })) return;
+
     try {
       window.dispatchEvent(new CustomEvent("cart:optimistic-add", { detail: { product } }));
       await api.post("/cart/add", { product: product._id, quantity: 1 });
@@ -95,9 +104,16 @@ export default function Home() {
       window.dispatchEvent(new Event("cart:updated"));
       toast.error(err.message || "Login required to add to cart");
     }
-  }, []);
+  }, [navigate]);
 
   const handleWishlist = useCallback(async (product) => {
+    if (!requireAuthForAction({
+      navigate,
+      toast,
+      message: "Please login to use wishlist",
+      pendingAction: { type: "wishlist", productId: product._id },
+    })) return;
+
     try {
       if (wishlistIds.has(product._id)) {
         await api.delete(`/wishlist/remove/${product._id}`);
@@ -110,7 +126,7 @@ export default function Home() {
     } catch (err) {
       toast.error(err.message || "Login required for wishlist");
     }
-  }, [loadWishlist, wishlistIds]);
+  }, [loadWishlist, navigate, wishlistIds]);
 
   const trending = useMemo(() => products.slice(0, 8), [products]);
   const newArrivals = useMemo(() => products.slice(4, 12), [products]);

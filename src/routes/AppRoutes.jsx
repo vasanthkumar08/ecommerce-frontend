@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import { lazy, Suspense } from "react";
 
 import Layout from "../components/Layout";
+import ProtectedRoute from "./ProtectedRoute";
 
 const AdminLayout = lazy(() => import("../pages/admin/AdminLayout"));
 const Home = lazy(() => import("../pages/Home"));
@@ -43,12 +44,12 @@ export default function AppRoutes() {
           <Route index element={<Home />} />
           <Route path="dashboard" element={<Navigate to="/profile" />} />
           <Route path="cart" element={<Cart />} />
-          <Route path="checkout" element={<Checkout />} />
+          <Route path="checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
           <Route path="products/:id" element={<ProductDetails />} />
           <Route path="product/:id" element={<ProductDetails />} />
-          <Route path="orders" element={<MyOrders />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="wishlist" element={<Wishlist />} />
+          <Route path="orders" element={<ProtectedRoute><MyOrders /></ProtectedRoute>} />
+          <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
         </Route>
 
         {/* ADMIN */}

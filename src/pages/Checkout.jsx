@@ -252,6 +252,12 @@ export default function Checkout() {
   };
 
   const clearCartEverywhere = async () => {
+    try {
+      await api.delete("/cart/clear");
+    } catch {
+      // Order creation already succeeded; local state still clears so the UI stays correct.
+    }
+
     setItems([]);
     dispatch(clearCart());
     storage.remove("cart");

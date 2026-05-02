@@ -1,17 +1,19 @@
 import { useDispatch } from "react-redux";
 import { loginSuccess } from "../features/auth/authSlice";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { loginUser } from "../features/auth/authApi";
 import { useState } from "react";
 import Icon from "../components/Icon";
+import { clearAuthRedirect, getAuthReturnTo } from "../utils/authRedirect";
 
 const inputClass = "focus-blue min-h-[var(--control-height)] w-full min-w-0 rounded-[var(--radius-control)] border border-slate-200 bg-white px-[var(--control-padding-x)] py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100";
 
 export default function Login() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -29,10 +31,13 @@ export default function Login() {
       dispatch(loginSuccess({ user, token: accessToken }));
       toast.success("Login successful");
 
+      const returnTo = location.state?.returnTo || getAuthReturnTo();
+      clearAuthRedirect();
+
       if (user.role === "admin" || user.role === "superadmin") {
-        navigate("/admin");
+        navigate(returnTo && returnTo !== "/" ? returnTo : "/admin", { replace: true });
       } else {
-        navigate("/dashboard");
+        navigate(returnTo || "/dashboard", { replace: true });
       }
     } catch (err) {
       toast.error(err.message || "Login failed");
@@ -42,7 +47,7 @@ export default function Login() {
   return (
     <div className="w-full max-w-full min-w-0 bg-slate-50 dark:bg-slate-950">
       <div className="container flex min-h-screen items-center justify-center py-6 sm:py-8">
-      <div className="w-full min-w-0 max-w-[360px] overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-[var(--shadow-card)] dark:border-slate-700 dark:bg-slate-900 sm:p-6">
+      <div className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-[var(--shadow-card)] dark:border-slate-700 dark:bg-slate-900 sm:w-[70%] sm:p-6 lg:w-[45%] xl:w-[40%] 2xl:w-[36rem]">
         <div className="mb-5 min-w-0 text-center">
           <Link to="/" className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-blue-600 text-lg font-bold text-white">S</Link>
           <h1 className="break-words text-xl font-bold text-slate-950 dark:text-slate-50 sm:text-2xl">Welcome back</h1>

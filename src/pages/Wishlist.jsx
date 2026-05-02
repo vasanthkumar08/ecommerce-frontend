@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import ProductCard from "../components/ProductCard";
 import { ProductSkeleton } from "../components/Skeleton";
 import api from "../services/api";
 import { normalizeWishlist } from "../utils/normalize";
+import { requireAuthForAction } from "../utils/authRedirect";
 
 export default function Wishlist() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,6 +29,13 @@ export default function Wishlist() {
   }, []);
 
   const handleAdd = async (product) => {
+    if (!requireAuthForAction({
+      navigate,
+      toast,
+      message: "Please login to add items to cart",
+      pendingAction: { type: "add-to-cart", productId: product._id },
+    })) return;
+
     try {
       window.dispatchEvent(new CustomEvent("cart:optimistic-add", { detail: { product } }));
       await api.post("/cart/add", { product: product._id, quantity: 1 });

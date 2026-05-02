@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import Button from "../components/Button";
 import Icon from "../components/Icon";
@@ -7,9 +7,11 @@ import Skeleton from "../components/Skeleton";
 import api from "../services/api";
 import { PLACEHOLDER_IMAGE } from "../config/env";
 import { safeImageUrl } from "../utils/security";
+import { requireAuthForAction } from "../utils/authRedirect";
 
 export default function ProductDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(Boolean(id));
 
@@ -33,6 +35,13 @@ export default function ProductDetails() {
 
   const handleAdd = async () => {
     if (!product?._id) return;
+    if (!requireAuthForAction({
+      navigate,
+      toast,
+      message: "Please login to add items to cart",
+      pendingAction: { type: "add-to-cart", productId: product._id },
+    })) return;
+
     try {
       window.dispatchEvent(new CustomEvent("cart:optimistic-add", { detail: { product } }));
       await api.post("/cart/add", { product: product._id, quantity: 1 });

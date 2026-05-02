@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import Icon from "../components/Icon";
@@ -8,6 +8,7 @@ import { setCart } from "../features/cart/cartSlice";
 import api from "../services/api";
 import { normalizeCart } from "../utils/normalize";
 import { getJson, setJson } from "../utils/storage";
+import { requireAuthForAction } from "../utils/authRedirect";
 
 const itemKey = (item) => item.product?._id || item._id || item.id || item.name;
 const CART_CACHE_KEY = "cart:cache";
@@ -102,6 +103,7 @@ const CartItem = memo(function CartItem({ item, busyAction, isSyncing, onIncreas
 
 export default function Cart() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState("");
@@ -318,6 +320,19 @@ export default function Cart() {
     return updateQuantity(event, item, nextQuantity);
   }, [handleRemove, updateQuantity]);
 
+  const handleCheckout = useCallback((event) => {
+    if (!items.length) return;
+    if (!requireAuthForAction({
+      navigate,
+      toast,
+      message: "Please login to checkout",
+      returnTo: "/checkout",
+      pendingAction: { type: "checkout" },
+    })) {
+      event.preventDefault();
+    }
+  }, [items.length, navigate]);
+
   return (
     <div className="grid w-full max-w-full gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
       <section className="min-w-0">
@@ -371,7 +386,7 @@ export default function Cart() {
           <div className="flex flex-wrap justify-between gap-2 text-slate-600 dark:text-slate-300"><span>Shipping</span><span>Free</span></div>
           <div className="flex flex-wrap justify-between gap-2 border-t border-slate-200 pt-3 text-lg font-semibold dark:border-slate-700"><span>Total</span><span>₹{subtotal}</span></div>
         </div>
-        <Link to="/checkout" className={`mt-5 flex w-full justify-center rounded-xl px-5 py-3 text-sm font-semibold text-white ${items.length ? "bg-blue-600 hover:bg-blue-700" : "pointer-events-none bg-slate-300 dark:bg-slate-700"}`}>
+        <Link to="/checkout" onClick={handleCheckout} className={`mt-5 flex w-full justify-center rounded-xl px-5 py-3 text-sm font-semibold text-white ${items.length ? "bg-blue-600 hover:bg-blue-700" : "pointer-events-none bg-slate-300 dark:bg-slate-700"}`}>
           Checkout
         </Link>
       </aside>

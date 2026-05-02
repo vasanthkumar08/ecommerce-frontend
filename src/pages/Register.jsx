@@ -30,7 +30,7 @@ export default function Register() {
   return (
     <div className="w-full max-w-full min-w-0 bg-slate-50 dark:bg-slate-950">
       <div className="container flex min-h-screen items-center justify-center py-6 sm:py-8">
-      <div className="w-full min-w-0 max-w-[400px] overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-[var(--shadow-card)] dark:border-slate-700 dark:bg-slate-900 sm:p-6">
+      <div className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-[var(--shadow-card)] dark:border-slate-700 dark:bg-slate-900 sm:w-[70%] sm:p-6 lg:w-[45%] xl:w-[40%] 2xl:w-[38rem]">
         <div className="mb-5 min-w-0 text-center">
           <Link to="/" className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-blue-600 text-lg font-bold text-white">S</Link>
           <h1 className="break-words text-xl font-bold text-slate-950 dark:text-slate-50 sm:text-2xl">Create account</h1>
